@@ -1,0 +1,111 @@
+ 
+/* name users because user is key word */ 
+/* name does not have to be your real name but you should put something their */ 
+CREATE TABLE users(
+userID INT PRIMARY KEY AUTO_INCREMENT,
+name VARCHAR NOT NULL,
+biography VARCHAR
+);
+ 
+ 
+/* data about each day*/ 
+CREATE TABLE day(
+day_of_year DATE PRIMARY KEY,
+sleep_hours FLOAT,
+sleep_quality INT
+CHECK( sleep_quality >= 0 AND sleep_quality <= 10)
+);
+CREATE TABLE reward (
+rewardID INT PRIMARY KEY,
+reward VARCHAR(100)
+CHECK( reward IN ('candy', 'break', 'watch tv', 'play vidiogames', 'other'))
+) ;
+ CREATE TABLE Q(
+QID int PRIMARY KEY,
+Q VARCHAR(100)
+);
+ 
+ 
+/* this is a work seshion witch is a period of time set asid for work 
+it has a constrait of kind of work to decreas the chance of problems from spelling errors 
+it only alawes quality of work to be on a skail of 1 to 10 
+*/ 
+CREATE TABLE workSesh( 
+day_and_time DATETIME, 
+day_of_year DATE, 
+ 
+how_long_in_min INT, 
+quality FLOAT CHECK (quality >= 0 AND quality <= 10), 
+kind_of_work VARCHAR(100) CHECK (kind_of_work IN('reading', 'writing','coding','burocracy', 'math', 'other')), 
+rewardID INT, 
+ 
+QID INT,
+userID INT
+ 
+); 
+ 
+ALTER TABLE workSesh
+ADD CONSTRAINT pkey PRIMARY KEY (day_and_time,userID);
+ 
+ 
+ALTER TABLE workSesh
+ADD FOREIGN KEY (day_of_year) REFERENCES day(day_of_year);
+ 
+ 
+ALTER TABLE workSesh
+ADD FOREIGN KEY (QID) REFERENCES Q(QID);
+ 
+ALTER TABLE workSesh
+ADD FOREIGN KEY (userID) REFERENCES users(userID);
+ 
+ 
+ 
+
+
+
+
+/*  
+find what amount of sleep leads to maximum efectivaty when doing work,  
+where maximum efectivaty is how evectie your are times how long you worked 
+*/  
+CREATE VIEW optimal_sleep_for_productivaty AS  
+SELECT AVG(workSesh.quality * workSesh.how_long_in_min) as totalEvectivaty, day.sleep_hours 
+FROM workSesh 
+INNER JOIN day ON workSesh.day_of_year = day.day_of_year 
+GROUP BY sleep_hours  
+ 
+/*  
+total evectivity   
+*/  
+CREATE VIEW total_evectivity AS  
+SELECT (how_long_in_min * quality) AS total_evectivity FROM workSesh 
+ 
+ 
+/* stored prosedur to replicate the last work seshion with only changing the time.  
+this is to save time if your are doing the same thing over and over again*/ 
+CREATE PROCEDURE same_as_last @day_and_time DATETIME 
+AS 
+INSERT INTO workSesh(day_and_time ,day_of_year ,how_long_in_min ,quality ,kind_of_work ,rewardID ,QID ,userID)  
+VALUES (  
+@day_and_time,  
+(SELECT day_of_year FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh)), 
+(SELECT how_long_in_min FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh)), 
+(SELECT quality FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh)), 
+(SELECT kind_of_work FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh)), 
+(SELECT rewardID FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh)), 
+(SELECT QID FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh)), 
+(SELECT userID FROM workSesh 
+WHERE day_and_time = (SELECT MAX(day_and_time) FROM workSesh))  
+); 
+EXEC same_as_last_time @day_and_time = '2021-11-1 15:30:00'; 
+ 
+ 
+ 
+
+  
